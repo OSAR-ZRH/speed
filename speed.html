@@ -26,9 +26,9 @@
     margin: 16mm;
   }
 
-  /* ===== ÄUSSERE SEITE (größer für Tablet) ===== */
+  /* ===== ÄUSSERE SEITE ===== */
   .page{
-    max-width: 1100px;     /* ← größer als vorher */
+    max-width: 1100px;
     margin: 24px auto;
     padding: 20px;
   }
@@ -38,7 +38,7 @@
     background:#fff;
     border:1px solid var(--border);
     border-radius:12px;
-    padding:26px 28px 24px; /* ← mehr Innenabstand */
+    padding:26px 28px 24px;
   }
 
   /* ===== HEADER ===== */
@@ -61,7 +61,7 @@
     font-weight: 700;
   }
 
-  /* ===== GRID (stabil, kein Ineinanderschieben) ===== */
+  /* ===== GRID (stabil) ===== */
   .grid{
     display:grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -85,10 +85,8 @@
     background:#fff;
   }
 
-  /* wichtig gegen WebKit/iPad-Min-Breiten */
-  input[type="time"]{
-    min-width:0;
-  }
+  /* hilft gegen "min-content" Effekte */
+  input[type="time"]{ min-width:0; }
 
   .hint{
     font-size:12px;
@@ -207,11 +205,26 @@
   </div>
 
 <script>
+  // Elemente sauber holen (Edge-sicher)
+  const elStart = document.getElementById("start");
+  const elEnd   = document.getElementById("end");
+  const elDist  = document.getElementById("dist");
+
+  const elDur   = document.getElementById("durOut");
+  const elVms   = document.getElementById("speedOut");
+  const elVkmh  = document.getElementById("speedKmhOut");
+
+  const elErr   = document.getElementById("err");
+  const btnCalc = document.getElementById("calcBtn");
+  const btnPdf  = document.getElementById("pdfBtn");
+  const btnReset= document.getElementById("resetBtn");
+
   function parseTimeToSeconds(t){
     if(!t) return NaN;
-    const p = t.split(":").map(Number);
+    const p = t.split(":").map(Number); // "HH:MM" oder "HH:MM:SS"
     if(p.length < 2) return NaN;
-    return (p[0]||0)*3600 + (p[1]||0)*60 + (p[2]||0);
+    const h = p[0] || 0, m = p[1] || 0, s = p[2] || 0;
+    return h*3600 + m*60 + s;
   }
 
   function formatDuration(sec){
@@ -223,49 +236,57 @@
   }
 
   function showError(msg){
-    const e = document.getElementById("err");
-    e.textContent = msg;
-    e.style.display = msg ? "block" : "none";
+    elErr.textContent = msg || "";
+    elErr.style.display = msg ? "block" : "none";
   }
 
   function calc(){
     showError("");
 
-    const s0 = parseTimeToSeconds(start.value);
-    const s1 = parseTimeToSeconds(end.value);
-    const dist = Number(dist.value);
+    const startStr = elStart.value;
+    const endStr   = elEnd.value;
+    const distStr  = elDist.value;
 
-    if(!isFinite(dist) || dist <= 0){
+    const distMeters = Number(distStr);
+    if(!isFinite(distMeters) || distMeters <= 0){
       showError("Bitte eine Distanz > 0 m eingeben.");
       return;
     }
+
+    const s0 = parseTimeToSeconds(startStr);
+    const s1 = parseTimeToSeconds(endStr);
     if(!isFinite(s0) || !isFinite(s1)){
       showError("Bitte Start- und Endzeit korrekt eingeben.");
       return;
     }
 
     let dt = s1 - s0;
-    if(dt <= 0) dt += 86400;
+    if(dt <= 0) dt += 86400; // über Mitternacht
+
     if(dt <= 0){
       showError("Die Dauer muss > 0 Sekunden sein.");
       return;
     }
 
-    const v_ms  = dist / dt;
+    const v_ms  = distMeters / dt;
     const v_kmh = v_ms * 3.6;
 
-    durOut.textContent      = `${formatDuration(dt)} (${dt.toFixed(2)} s)`;
-    speedOut.textContent    = `${v_ms.toFixed(3)} m/s`;
-    speedKmhOut.textContent = `${v_kmh.toFixed(2)} km/h`;
+    elDur.textContent  = `${formatDuration(dt)} (${dt.toFixed(2)} s)`;
+    elVms.textContent  = `${v_ms.toFixed(3)} m/s`;
+    elVkmh.textContent = `${v_kmh.toFixed(2)} km/h`;
   }
 
-  calcBtn.onclick = calc;
-  pdfBtn.onclick  = () => { calc(); window.print(); };
-  resetBtn.onclick = () => {
-    start.value="00:00:00"; end.value="00:00:10"; dist.value="";
-    durOut.textContent="—"; speedOut.textContent="—"; speedKmhOut.textContent="—";
+  btnCalc.addEventListener("click", calc);
+  btnPdf.addEventListener("click", () => { calc(); window.print(); });
+  btnReset.addEventListener("click", () => {
+    elStart.value = "00:00:00";
+    elEnd.value   = "00:00:10";
+    elDist.value  = "";
+    elDur.textContent = "—";
+    elVms.textContent = "—";
+    elVkmh.textContent= "—";
     showError("");
-  };
+  });
 </script>
 </body>
 </html>
