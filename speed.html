@@ -60,26 +60,46 @@
     font-weight: 700;
   }
 
-.grid{
-  display:grid;
-  grid-template-columns: repeat(3, minmax(240px, 1fr));
-  gap:12px;
-  margin-top:14px;
-}
-
-/* iPad / Tablet: 2 Spalten (Portrait sicher) */
-@media (max-width: 1024px){
+  /* ===== Grid ===== */
   .grid{
-    grid-template-columns: repeat(2, minmax(240px, 1fr));
+    display:grid;
+    grid-template-columns: repeat(3, minmax(240px, 1fr));
+    gap:12px;
+    margin-top:14px;
   }
-}
 
-/* Mobile: 1 Spalte */
-@media (max-width: 600px){
-  .grid{
-    grid-template-columns: 1fr;
+  /* iPad/Tablet: 2 Spalten (Portrait sicher) */
+  @media (max-width: 1024px){
+    .grid{
+      grid-template-columns: repeat(2, minmax(240px, 1fr));
+    }
+
+    /* iPad Fix: iOS macht type="time" systembedingt sehr breit */
+    input.time{
+      max-width: 260px;
+    }
+
+    /* sorgt dafür, dass die Inputs links bleiben (nicht "komisch" zentriert) */
+    .grid > div{
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+    }
   }
-}
+
+  /* Mobile: 1 Spalte */
+  @media (max-width: 600px){
+    .grid{
+      grid-template-columns: 1fr;
+    }
+    input.time{
+      max-width: none;
+      width: 100%;
+    }
+    .grid > div{
+      align-items:stretch;
+    }
+  }
 
   label{
     display:block;
@@ -155,7 +175,8 @@
     .sheet{ border:none; border-radius:0; padding:0; }
     .actions, .hint { display:none !important; }
     input{ border:1px solid #999; }
-    .grid > div{ min-width: 0; } /* Druck: keine min-width Einschränkung */
+    input.time{ max-width: none !important; } /* Druck: normal */
+    .grid > div{ display:block; }            /* Druck: normal */
   }
 </style>
 </head>
@@ -172,13 +193,13 @@
       <div class="grid">
         <div>
           <label for="start">Start (Zeit)</label>
-          <input id="start" type="time" step="1" value="00:00:00" />
+          <input id="start" class="time" type="time" step="1" value="00:00:00" />
           <div class="hint">Format: HH:MM:SS</div>
         </div>
 
         <div>
           <label for="end">Ende (Zeit)</label>
-          <input id="end" type="time" step="1" value="00:00:10" />
+          <input id="end" class="time" type="time" step="1" value="00:00:10" />
           <div class="hint">Format: HH:MM:SS</div>
         </div>
 
