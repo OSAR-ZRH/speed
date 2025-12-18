@@ -60,33 +60,26 @@
     font-weight: 700;
   }
 
+.grid{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(240px, 1fr));
+  gap:12px;
+  margin-top:14px;
+}
+
+/* iPad / Tablet: 2 Spalten (Portrait sicher) */
+@media (max-width: 1024px){
   .grid{
-    display:grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap:12px;
-    margin-top:14px;
+    grid-template-columns: repeat(2, minmax(240px, 1fr));
   }
+}
 
-  /* verhindert zu schmale Felder auf mittleren Breiten */
-  .grid > div{
-    min-width: 220px;
+/* Mobile: 1 Spalte */
+@media (max-width: 600px){
+  .grid{
+    grid-template-columns: 1fr;
   }
-
-  /* ===== Responsive Fix: Tablet & Mobile ===== */
-  @media (max-width: 900px){
-    .grid{
-      grid-template-columns: 1fr 1fr; /* Tablet: 2 Spalten */
-    }
-  }
-
-  @media (max-width: 600px){
-    .grid{
-      grid-template-columns: 1fr;     /* Mobile: 1 Spalte */
-    }
-    .grid > div{
-      min-width: 0;                  /* auf kleinen Screens wieder frei */
-    }
-  }
+}
 
   label{
     display:block;
