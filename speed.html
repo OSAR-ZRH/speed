@@ -61,12 +61,12 @@
   }
 
   /* ===== Grid (nur Desktop / Edge) ===== */
-  .grid{
-    display:grid;
-    grid-template-columns: 1fr 1fr 1fr; /* Edge/Desktop: 3 Spalten */
-    gap:12px;
-    margin-top:14px;
-  }
+.grid{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap:12px;
+  margin-top:14px;
+}
 
   label{
     display:block;
