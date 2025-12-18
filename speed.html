@@ -26,23 +26,25 @@
     margin: 16mm;
   }
 
+  /* ===== ÄUSSERE SEITE (größer für Tablet) ===== */
   .page{
-    max-width: 900px;
+    max-width: 1100px;     /* ← größer als vorher */
     margin: 24px auto;
-    padding: 18px;
+    padding: 20px;
   }
 
+  /* ===== WEISSE KACHEL ===== */
   .sheet{
     background:#fff;
     border:1px solid var(--border);
-    border-radius:10px;
-    padding:18px 18px 16px;
+    border-radius:12px;
+    padding:26px 28px 24px; /* ← mehr Innenabstand */
   }
 
-  /* Header: Logo oben rechts */
+  /* ===== HEADER ===== */
   .header{
     position: relative;
-    height: 36px; /* stabile Kopfhöhe (auch im PDF) */
+    height: 36px;
   }
   .logo{
     position:absolute;
@@ -53,20 +55,19 @@
     line-height:1.1;
   }
 
-  /* Titel direkt unter Header */
   .title{
     margin-top: 8px;
     font-size: 20px;
     font-weight: 700;
   }
 
-  /* ===== Grid (nur Desktop / Edge) ===== */
-.grid{
-  display:grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap:12px;
-  margin-top:14px;
-}
+  /* ===== GRID (stabil, kein Ineinanderschieben) ===== */
+  .grid{
+    display:grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap:16px;
+    margin-top:18px;
+  }
 
   label{
     display:block;
@@ -84,6 +85,11 @@
     background:#fff;
   }
 
+  /* wichtig gegen WebKit/iPad-Min-Breiten */
+  input[type="time"]{
+    min-width:0;
+  }
+
   .hint{
     font-size:12px;
     margin-top:6px;
@@ -94,7 +100,7 @@
     display:flex;
     gap:10px;
     flex-wrap:wrap;
-    margin-top:14px;
+    margin-top:18px;
   }
 
   button{
@@ -113,9 +119,9 @@
   }
 
   .result{
-    margin-top:14px;
+    margin-top:18px;
     border-top:1px dashed var(--border);
-    padding-top:12px;
+    padding-top:14px;
     display:grid;
     gap:8px;
   }
@@ -135,7 +141,7 @@
     display:none;
   }
 
-  /* ===== Druckansicht: nur das Blatt, keine Hintergründe/Buttons ===== */
+  /* ===== DRUCK ===== */
   @media print{
     body{ background:#fff; }
     .page{ margin:0; padding:0; max-width:none; }
@@ -202,14 +208,10 @@
 
 <script>
   function parseTimeToSeconds(t){
-    // erwartet "HH:MM" oder "HH:MM:SS"
     if(!t) return NaN;
-    const parts = t.split(":").map(Number);
-    if(parts.length < 2) return NaN;
-    const h = parts[0] || 0;
-    const m = parts[1] || 0;
-    const s = parts[2] || 0;
-    return (h*3600) + (m*60) + s;
+    const p = t.split(":").map(Number);
+    if(p.length < 2) return NaN;
+    return (p[0]||0)*3600 + (p[1]||0)*60 + (p[2]||0);
   }
 
   function formatDuration(sec){
@@ -221,36 +223,29 @@
   }
 
   function showError(msg){
-    const el = document.getElementById("err");
-    el.textContent = msg;
-    el.style.display = msg ? "block" : "none";
+    const e = document.getElementById("err");
+    e.textContent = msg;
+    e.style.display = msg ? "block" : "none";
   }
 
   function calc(){
     showError("");
 
-    const start = document.getElementById("start").value;
-    const end   = document.getElementById("end").value;
-    const distV = document.getElementById("dist").value;
+    const s0 = parseTimeToSeconds(start.value);
+    const s1 = parseTimeToSeconds(end.value);
+    const dist = Number(dist.value);
 
-    const dist = Number(distV);
     if(!isFinite(dist) || dist <= 0){
       showError("Bitte eine Distanz > 0 m eingeben.");
       return;
     }
-
-    const s0 = parseTimeToSeconds(start);
-    const s1 = parseTimeToSeconds(end);
     if(!isFinite(s0) || !isFinite(s1)){
       showError("Bitte Start- und Endzeit korrekt eingeben.");
       return;
     }
 
     let dt = s1 - s0;
-
-    // Falls Ende über Mitternacht: +24h
-    if(dt <= 0) dt += 24*3600;
-
+    if(dt <= 0) dt += 86400;
     if(dt <= 0){
       showError("Die Dauer muss > 0 Sekunden sein.");
       return;
@@ -259,27 +254,18 @@
     const v_ms  = dist / dt;
     const v_kmh = v_ms * 3.6;
 
-    document.getElementById("durOut").textContent = `${formatDuration(dt)} (${dt.toFixed(2)} s)`;
-    document.getElementById("speedOut").textContent = `${v_ms.toFixed(3)} m/s`;
-    document.getElementById("speedKmhOut").textContent = `${v_kmh.toFixed(2)} km/h`;
+    durOut.textContent      = `${formatDuration(dt)} (${dt.toFixed(2)} s)`;
+    speedOut.textContent    = `${v_ms.toFixed(3)} m/s`;
+    speedKmhOut.textContent = `${v_kmh.toFixed(2)} km/h`;
   }
 
-  document.getElementById("calcBtn").addEventListener("click", calc);
-
-  document.getElementById("pdfBtn").addEventListener("click", () => {
-    calc();
-    window.print();
-  });
-
-  document.getElementById("resetBtn").addEventListener("click", () => {
-    document.getElementById("start").value = "00:00:00";
-    document.getElementById("end").value   = "00:00:10";
-    document.getElementById("dist").value  = "";
-    document.getElementById("durOut").textContent = "—";
-    document.getElementById("speedOut").textContent = "—";
-    document.getElementById("speedKmhOut").textContent = "—";
+  calcBtn.onclick = calc;
+  pdfBtn.onclick  = () => { calc(); window.print(); };
+  resetBtn.onclick = () => {
+    start.value="00:00:00"; end.value="00:00:10"; dist.value="";
+    durOut.textContent="—"; speedOut.textContent="—"; speedKmhOut.textContent="—";
     showError("");
-  });
+  };
 </script>
 </body>
 </html>
