@@ -42,8 +42,7 @@
   /* Header: Logo oben rechts */
   .header{
     position: relative;
-    min-height: 2
-      4px;
+    height: 36px; /* FIX: stabile Kopfhöhe (auch im PDF) */
   }
   .logo{
     position:absolute;
@@ -51,11 +50,12 @@
     right:0;
     font-weight:700;
     font-size:24px;
+    line-height:1.1;
   }
 
-  /* 2 Zeilen darunter: Titel links */
+  /* Titel direkt unter Header (nicht "zu tief" im PDF) */
   .title{
-    margin-top: 32px; /* ~2 Zeilen Abstand */
+    margin-top: 8px;  /* FIX: statt 32px */
     font-size: 20px;
     font-weight: 700;
   }
@@ -266,9 +266,7 @@
   document.getElementById("calcBtn").addEventListener("click", calc);
 
   document.getElementById("pdfBtn").addEventListener("click", () => {
-    // vor dem Druck sicherheitshalber nochmal rechnen
     calc();
-    // Druckdialog -> dort "Als PDF speichern"
     window.print();
   });
 
