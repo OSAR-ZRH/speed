@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Errechnete Geschwindigkeit</title>
+
+<style>
+  :root{
+    --ink:#000;
+    --border:#cbd5e1;
+    --bg:#f8fafc;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family: Arial, Helvetica, sans-serif;
+    color:var(--ink);
+    background:var(--bg);
+  }
+
+  /* ===== Druck / PDF (A4) ===== */
+  @page{
+    size: A4;
+    margin: 16mm;
+  }
+
+  .page{
+    max-width: 900px;
+    margin: 24px auto;
+    padding: 18px;
+  }
+
+  .sheet{
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:18px 18px 16px;
+  }
+
+  /* Header: Logo oben rechts */
+  .header{
+    position: relative;
+    min-height: 24px;
+  }
+  .logo{
+    position:absolute;
+    top:0;
+    right:0;
+    font-weight:700;
+    font-size:16px;
+  }
+
+  /* 2 Zeilen darunter: Titel links */
+  .title{
+    margin-top: 32px; /* ~2 Zeilen Abstand */
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap:12px;
+    margin-top:14px;
+  }
+
+  label{
+    display:block;
+    font-size:12px;
+    margin-bottom:6px;
+  }
+
+  input{
+    width:100%;
+    height:40px;
+    padding:8px 10px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    font: 14px Arial, Helvetica, sans-serif;
+    background:#fff;
+  }
+
+  .hint{
+    font-size:12px;
+    margin-top:6px;
+    opacity:.8;
+  }
+
+  .actions{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:14px;
+  }
+
+  button{
+    height:40px;
+    padding:0 14px;
+    border-radius:8px;
+    border:1px solid var(--border);
+    background:#fff;
+    cursor:pointer;
+    font: 14px Arial, Helvetica, sans-serif;
+  }
+  button.primary{
+    border-color:#111;
+    background:#111;
+    color:#fff;
+  }
+
+  .result{
+    margin-top:14px;
+    border-top:1px dashed var(--border);
+    padding-top:12px;
+    display:grid;
+    gap:8px;
+  }
+
+  .row{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    font-size:14px;
+  }
+  .row b{font-weight:700}
+
+  .error{
+    margin-top:10px;
+    color:#b00020;
+    font-size:13px;
+    display:none;
+  }
+
+  /* ===== Druckansicht: nur das Blatt, keine Hintergründe/Buttons ===== */
+  @media print{
+    body{ background:#fff; }
+    .page{ margin:0; padding:0; max-width:none; }
+    .sheet{ border:none; border-radius:0; padding:0; }
+    .actions, .hint { display:none !important; }
+    input{ border:1px solid #999; }
+  }
+</style>
+</head>
+
+<body>
+  <div class="page">
+    <div class="sheet" id="printArea">
+      <div class="header">
+        <div class="logo">Flughafen Zürich</div>
+      </div>
+
+      <div class="title">Errechnete Geschwindigkeit</div>
+
+      <div class="grid">
+        <div>
+          <label for="start">Start (Zeit)</label>
+          <input id="start" type="time" step="1" value="00:00:00" />
+          <div class="hint">Format: HH:MM:SS</div>
+        </div>
+
+        <div>
+          <label for="end">Ende (Zeit)</label>
+          <input id="end" type="time" step="1" value="00:00:10" />
+          <div class="hint">Format: HH:MM:SS</div>
+        </div>
+
+        <div>
+          <label for="dist">Distanz (m)</label>
+          <input id="dist" type="number" min="0" step="0.01" placeholder="z.B. 120" />
+          <div class="hint">Meter (m)</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="primary" id="calcBtn">Berechnen</button>
+        <button id="pdfBtn">Als PDF speichern</button>
+        <button id="resetBtn">Zurücksetzen</button>
+      </div>
+
+      <div class="error" id="err"></div>
+
+      <div class="result" aria-live="polite">
+        <div class="row">
+          <span>Dauer</span>
+          <b id="durOut">—</b>
+        </div>
+        <div class="row">
+          <span>Errechnete Geschwindigkeit</span>
+          <b id="speedOut">—</b>
+        </div>
+        <div class="row">
+          <span>Errechnete Geschwindigkeit (km/h)</span>
+          <b id="speedKmhOut">—</b>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  function parseTimeToSeconds(t){
+    // erwartet "HH:MM" oder "HH:MM:SS"
+    if(!t) return NaN;
+    const parts = t.split(":").map(Number);
+    if(parts.length < 2) return NaN;
+    const h = parts[0] || 0;
+    const m = parts[1] || 0;
+    const s = parts[2] || 0;
+    return (h*3600) + (m*60) + s;
+  }
+
+  function formatDuration(sec){
+    const s = Math.max(0, Math.round(sec));
+    const hh = String(Math.floor(s/3600)).padStart(2,"0");
+    const mm = String(Math.floor((s%3600)/60)).padStart(2,"0");
+    const ss = String(s%60).padStart(2,"0");
+    return `${hh}:${mm}:${ss}`;
+  }
+
+  function showError(msg){
+    const el = document.getElementById("err");
+    el.textContent = msg;
+    el.style.display = msg ? "block" : "none";
+  }
+
+  function calc(){
+    showError("");
+
+    const start = document.getElementById("start").value;
+    const end   = document.getElementById("end").value;
+    const distV = document.getElementById("dist").value;
+
+    const dist = Number(distV);
+    if(!isFinite(dist) || dist <= 0){
+      showError("Bitte eine Distanz > 0 m eingeben.");
+      return;
+    }
+
+    const s0 = parseTimeToSeconds(start);
+    const s1 = parseTimeToSeconds(end);
+    if(!isFinite(s0) || !isFinite(s1)){
+      showError("Bitte Start- und Endzeit korrekt eingeben.");
+      return;
+    }
+
+    let dt = s1 - s0;
+
+    // Falls Ende über Mitternacht: +24h
+    if(dt <= 0) dt += 24*3600;
+
+    if(dt <= 0){
+      showError("Die Dauer muss > 0 Sekunden sein.");
+      return;
+    }
+
+    const v_ms  = dist / dt;
+    const v_kmh = v_ms * 3.6;
+
+    document.getElementById("durOut").textContent = `${formatDuration(dt)} (${dt.toFixed(2)} s)`;
+    document.getElementById("speedOut").textContent = `${v_ms.toFixed(3)} m/s`;
+    document.getElementById("speedKmhOut").textContent = `${v_kmh.toFixed(2)} km/h`;
+  }
+
+  document.getElementById("calcBtn").addEventListener("click", calc);
+
+  document.getElementById("pdfBtn").addEventListener("click", () => {
+    // vor dem Druck sicherheitshalber nochmal rechnen
+    calc();
+    // Druckdialog -> dort "Als PDF speichern"
+    window.print();
+  });
+
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    document.getElementById("start").value = "00:00:00";
+    document.getElementById("end").value   = "00:00:10";
+    document.getElementById("dist").value  = "";
+    document.getElementById("durOut").textContent = "—";
+    document.getElementById("speedOut").textContent = "—";
+    document.getElementById("speedKmhOut").textContent = "—";
+    showError("");
+  });
+</script>
+</body>
+</html>
