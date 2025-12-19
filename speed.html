@@ -99,6 +99,7 @@
     gap:10px;
     flex-wrap:wrap;
     margin-top:18px;
+    align-items:center;
   }
 
   button{
@@ -114,6 +115,61 @@
     border-color:#111;
     background:#111;
     color:#fff;
+  }
+
+  /* ===== Toggle ===== */
+  .toggle{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:8px 10px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    background:#fff;
+    height:40px;
+  }
+  .toggle .tlabel{
+    font-size:13px;
+    white-space:nowrap;
+  }
+  .switch{
+    position:relative;
+    width:46px;
+    height:26px;
+    flex:0 0 auto;
+  }
+  .switch input{
+    position:absolute;
+    inset:0;
+    opacity:0;
+    cursor:pointer;
+    margin:0;
+  }
+  .track{
+    position:absolute;
+    inset:0;
+    border:1px solid var(--border);
+    border-radius:999px;
+    background:#e5e7eb;
+    transition:background .15s ease;
+  }
+  .knob{
+    position:absolute;
+    top:3px;
+    left:3px;
+    width:20px;
+    height:20px;
+    border-radius:999px;
+    background:#fff;
+    border:1px solid var(--border);
+    transition:transform .15s ease;
+  }
+  .switch input:checked + .track{
+    background:#111;
+    border-color:#111;
+  }
+  .switch input:checked + .track .knob{
+    transform:translateX(20px);
   }
 
   .result{
@@ -183,6 +239,15 @@
         <button class="primary" id="calcBtn">Berechnen</button>
         <button id="pdfBtn">Als PDF speichern</button>
         <button id="resetBtn">Zurücksetzen</button>
+
+        <!-- Toggle: standard EIN -->
+        <div class="toggle" title="Video/Nachfahrmessung: bis 100 km/h −10 km/h, über 100 km/h −10%">
+          <div class="tlabel">Toleranz abziehen</div>
+          <label class="switch">
+            <input type="checkbox" id="tolToggle" checked />
+            <span class="track"><span class="knob"></span></span>
+          </label>
+        </div>
       </div>
 
       <div class="error" id="err"></div>
@@ -192,13 +257,25 @@
           <span>Dauer</span>
           <b id="durOut">—</b>
         </div>
+
         <div class="row">
           <span>Errechnete Geschwindigkeit</span>
-          <b id="speedOut">—</b>
+          <b id="speedKmhRawOut">—</b>
         </div>
+
         <div class="row">
-          <span>Errechnete Geschwindigkeit (km/h)</span>
-          <b id="speedKmhOut">—</b>
+          <span>Toleranzabzug (Video)</span>
+          <b id="tolOut">—</b>
+        </div>
+
+        <div class="row">
+          <span>Relevant nach Toleranz</span>
+          <b id="speedKmhAdjOut">—</b>
+        </div>
+
+        <div class="row">
+          <span>Errechnete Geschwindigkeit (m/s)</span>
+          <b id="speedOut">—</b>
         </div>
       </div>
     </div>
@@ -212,12 +289,17 @@
 
   const elDur   = document.getElementById("durOut");
   const elVms   = document.getElementById("speedOut");
-  const elVkmh  = document.getElementById("speedKmhOut");
+
+  const elVkmhRaw = document.getElementById("speedKmhRawOut");
+  const elTol     = document.getElementById("tolOut");
+  const elVkmhAdj = document.getElementById("speedKmhAdjOut");
 
   const elErr   = document.getElementById("err");
   const btnCalc = document.getElementById("calcBtn");
   const btnPdf  = document.getElementById("pdfBtn");
   const btnReset= document.getElementById("resetBtn");
+
+  const elTolToggle = document.getElementById("tolToggle");
 
   function parseTimeToSeconds(t){
     if(!t) return NaN;
@@ -238,6 +320,14 @@
   function showError(msg){
     elErr.textContent = msg || "";
     elErr.style.display = msg ? "block" : "none";
+  }
+
+  // Toleranz (Video/Nachfahrt) innerorts: bis 100 km/h -> -10 km/h, darüber -> -10%
+  function applyVideoToleranceKmh(v_kmh){
+    if(v_kmh <= 100){
+      return { tol: 10, mode: "kmh" }; // -10 km/h
+    }
+    return { tol: v_kmh * 0.10, mode: "pct" }; // -10%
   }
 
   function calc(){
@@ -271,21 +361,44 @@
     const v_ms  = distMeters / dt;
     const v_kmh = v_ms * 3.6;
 
+    // Outputs raw
     elDur.textContent  = `${formatDuration(dt)} (${dt.toFixed(2)} s)`;
     elVms.textContent  = `${v_ms.toFixed(3)} m/s`;
-    elVkmh.textContent = `${v_kmh.toFixed(2)} km/h`;
+    elVkmhRaw.textContent = `${v_kmh.toFixed(2)} km/h`;
+
+    // Toleranz optional
+    if(elTolToggle.checked){
+      const t = applyVideoToleranceKmh(v_kmh);
+      const adj = Math.max(0, v_kmh - t.tol);
+
+      elTol.textContent = (t.mode === "kmh")
+        ? `−${t.tol.toFixed(0)} km/h`
+        : `−${t.tol.toFixed(2)} km/h (10%)`;
+
+      elVkmhAdj.textContent = `${adj.toFixed(2)} km/h`;
+    }else{
+      elTol.textContent = "— (aus)";
+      elVkmhAdj.textContent = `${v_kmh.toFixed(2)} km/h`;
+    }
   }
 
   btnCalc.addEventListener("click", calc);
   btnPdf.addEventListener("click", () => { calc(); window.print(); });
+
+  // bei Toggle-Änderung sofort neu berechnen, wenn schon Werte da sind
+  elTolToggle.addEventListener("change", () => { calc(); });
+
   btnReset.addEventListener("click", () => {
     elStart.value = "00:00:00";
     elEnd.value   = "00:00:10";
     elDist.value  = "";
     elDur.textContent = "—";
     elVms.textContent = "—";
-    elVkmh.textContent= "—";
+    elVkmhRaw.textContent = "—";
+    elTol.textContent = "—";
+    elVkmhAdj.textContent = "—";
     showError("");
+    elTolToggle.checked = true; // wieder Standard: EIN
   });
 </script>
 </body>
