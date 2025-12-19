@@ -53,6 +53,7 @@
     font-weight:700;
     font-size:24px;
     line-height:1.1;
+    color:#0064a8; /* Flughafen Zürich Blau */
   }
 
   .title{
@@ -112,8 +113,20 @@
     font: 14px Arial, Helvetica, sans-serif;
   }
   button.primary{
-    border-color:#111;
-    background:#111;
+    border-color:#0064a8;
+    background:#0064a8;
+    color:#fff;
+  }
+
+  button.pdfBtn{
+    border-color:#9e0000;
+    background:#9e0000;
+    color:#fff;
+  }
+
+  button.ResetBtn{
+    border-color:#ff8000;
+    background:#ff8000;
     color:#fff;
   }
 
@@ -125,7 +138,7 @@
     padding:8px 10px;
     border:1px solid var(--border);
     border-radius:10px;
-    background:#fff;
+    background:#ffffff;
     height:40px;
   }
   .toggle .tlabel{
@@ -165,8 +178,8 @@
     transition:transform .15s ease;
   }
   .switch input:checked + .track{
-    background:#111;
-    border-color:#111;
+    background:#0064a8;
+    border-color:#0064a8;
   }
   .switch input:checked + .track .knob{
     transform:translateX(20px);
@@ -237,8 +250,8 @@
 
       <div class="actions">
         <button class="primary" id="calcBtn">Berechnen</button>
-        <button id="pdfBtn">Als PDF speichern</button>
-        <button id="resetBtn">Zurücksetzen</button>
+        <button class="pdfBtn" id="pdfBtn">Als PDF speichern</button>
+        <button class="ResetBtn" id="resetBtn">Zurücksetzen</button>
 
         <!-- Toggle: standard EIN -->
         <div class="toggle" title="Video/Nachfahrmessung: bis 100 km/h −10 km/h, über 100 km/h −10%">
