@@ -208,14 +208,45 @@
     display:none;
   }
 
-  /* ===== DRUCK ===== */
-  @media print{
-    body{ background:#fff; }
-    .page{ margin:0; padding:0; max-width:none; }
-    .sheet{ border:none; border-radius:0; padding:0; }
-    .actions, .hint { display:none !important; }
-    input{ border:1px solid #999; }
+  /* ===== PDF / DRUCK – Fusszeile ===== */
+  .print-footer{
+    display:none;
   }
+
+  /* ===== DRUCK ===== */
+@media print{
+  body{ background:#fff !important; }
+
+  .page{ margin:0 !important; padding:0 !important; max-width:none !important; }
+  .sheet{ border:none !important; border-radius:0 !important; padding:0 !important; }
+
+  /* WICHTIG: Buttons/Actions im Druck ausblenden */
+  .actions{ display:none !important; }
+  button{ display:none !important; }
+  .hint{ display:none !important; }
+
+  input{ border:1px solid #999 !important; }
+
+  /* Fusszeile: gleich breit wie Content (1100px) */
+  .print-footer{
+    position:fixed;
+    bottom:10mm;
+
+    width:1100px;
+    max-width:100%;
+    left:50%;
+    transform:translateX(-50%);
+
+    display:flex !important;
+    justify-content:space-between;
+    font-size:10px;
+    color:#444;
+    border-top:1px solid #ccc;
+    padding-top:3mm;
+  }
+}
+
+
 </style>
 </head>
 
@@ -292,6 +323,12 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- Fusszeile: nur im PDF/Druck sichtbar -->
+  <div class="print-footer">
+    <span id="printDate"></span>
+    <span>Airport Authority, Ramp Safety</span>
   </div>
 
 <script>
@@ -394,6 +431,17 @@
       elVkmhAdj.textContent = `${v_kmh.toFixed(2)} km/h`;
     }
   }
+
+  // Datum für Fusszeile setzen (dd.mm.yyyy)
+  (function setPrintDate(){
+    const el = document.getElementById("printDate");
+    if(!el) return;
+    const d = new Date();
+    const dd = String(d.getDate()).padStart(2,"0");
+    const mm = String(d.getMonth()+1).padStart(2,"0");
+    const yyyy = d.getFullYear();
+    el.textContent = `${dd}.${mm}.${yyyy}`;
+  })();
 
   btnCalc.addEventListener("click", calc);
   btnPdf.addEventListener("click", () => { calc(); window.print(); });
